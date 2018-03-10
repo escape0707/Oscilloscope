@@ -108,21 +108,51 @@ public class PapersManager : MonoBehaviour {
             RepositionPapersStartFrom(nextNode);
     }
 
+    /// <summary> 合并纸片 </summary>
+    /// <param name="sonLLNode"> 被拖动的纸片在原所处 children 中对应的 LinkedListNode </param>
+    /// <param name="fatherLLNode"> 被添加的纸片在所处 children 中对应的 LinkedListNode </param>
+    void MergeNodes(LinkedListNode<PaperNode> sonLLNode, LinkedListNode<PaperNode> fatherLLNode) {
+        PaperNode son = sonLLNode.Value;
+        PaperNode father = fatherLLNode.Value;
+
+        // // 被并购
+        // var start = to.data.Last;
+        foreach (var waveAttribute in son.data)
+            father.data.AddLast(waveAttribute);
+        // start = start.Next;
+        // var end = to.data.Last;
+        father.waveScript.Refresh();
+
+        // // 认人为父
+        // father.children.AddLast(son);
+
+        // 不堪其辱：“我选择死亡！”
+        // // 注：son 仍在 father.children 中有引用，故数据不会被彻底删除，
+        // //     只会 Destroy 对应纸片、重排、并从原父节点下移除。
+        DeleteNode(sonLLNode); 
+    }
+
     void OnGUI() {
         // Make a background box
-        GUI.Box(new Rect(10,10,100,90), "PapersManager");
+        GUI.Box(new Rect(10,10,100,120), "PapersManager");
     
         // Make the first button. If it is pressed, create a new papar
         if(GUI.Button(new Rect(20,40,80,20), "Create")) {
-            Debug.Log("Create");
+            // Debug.Log("Create");
             CreateNode();
         }
     
         // Make the second button. If it is pressed, delete the first and the last paper
         if(GUI.Button(new Rect(20,70,80,20), "Delete")) {
-            Debug.Log("Delete");
+            // Debug.Log("Delete");
             DeleteNode(expandedNode.children.First);
             DeleteNode(expandedNode.children.Last);
+        }
+    
+        // Make the third button. If it is pressed, merge from the first to the last paper
+        if(GUI.Button(new Rect(20,100,80,20), "Merge")) {
+            Debug.Log("Merge");
+            MergeNodes(expandedNode.children.First, expandedNode.children.Last);
         }
     }
 

@@ -39,6 +39,12 @@ public class WaveController : MonoBehaviour {
         isInitialized = false;
     }
 
+    /// <summary> 立即重新初始化 LineRenderer </summary>
+    internal void Refresh() {
+        lineRenderer.positionCount = 0;
+        InitializeLineRender();
+    }
+
 
     /// <summary> WaveController 是否已经初始化 </summary>
     private bool isInitialized = false;
