@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,9 +13,9 @@ using WaveData = System.Collections.Generic.LinkedList<WaveController.WaveAttrib
 public class WaveController : MonoBehaviour {
 
     /// <summary> 代表一条正弦波的参数组，由三个 float: a, omega, phi 组成 </summary>
-    public class WaveAttribute {
-        public float a, omega, phi;
-        public WaveAttribute(float a = 1, float omega = 1, float phi = 0) {
+    internal class WaveAttribute {
+        internal float a, omega, phi;
+        internal WaveAttribute(float a = 1, float omega = 1, float phi = 0) {
             this.a = a; this.omega = omega; this.phi = phi;
         }
     }
@@ -25,16 +25,16 @@ public class WaveController : MonoBehaviour {
     /// <summary> 波形显示对象 Waveform 的 LineRenderer </summary>
     public LineRenderer lineRenderer;
     /// <summary> 波形展示区的宽度 </summary>
-    public const float paperWeight = 2; // TODO: 这里暂时还是写死的，为了方便之后实例化不同高宽的纸片，应该怎么做？
+    internal const float paperWeight = 2; // TODO: 这里暂时还是写死的，为了方便之后实例化不同高宽的纸片，应该怎么做？
     /// <summary> 波形展示区的高度 </summary>
-    public const float paperHeight = 1; // TODO: 如果波形超过了上下界，何如？
+    internal const float paperHeight = 1; // TODO: 如果波形超过了上下界，何如？
     /// <summary> 初始化时点的横坐标的间隔 </summary>
-    public const float deltaX = .02f;
+    internal const float deltaX = .02f;
     /// <summary> 当前 WaveController 所采用的波形数据源 </summary>
-    public WaveData waveData;
+    internal WaveData waveData;
 
     /// <summary> 设置为下一次 Update 时重新初始化 LineRenderer </summary>
-    public void setOutOfDate() {
+    internal void SetOutOfDate() {
         lineRenderer.positionCount = 0;
         isInitialized = false;
     }
@@ -57,16 +57,15 @@ public class WaveController : MonoBehaviour {
     }
 
     /// <summary> 波形函数：众正弦函数叠加 </summary>
-    float WaveFunction(float x) {
+    private float WaveFunction(float x) {
         float y = 0;
-        foreach (WaveAttribute wa in waveData) {
+        foreach (WaveAttribute wa in waveData)
             y += wa.a * Mathf.Sin(wa.omega * x + wa.phi); 
-        }
         return y;
     }
 
     /// <summary> 初始化 LineRenderer </summary>
-    void InitializeLineRender() {
+    private void InitializeLineRender() {
         // 计算初始化时点的总数
         int initCount = (int)Math.Ceiling(paperTransform.localScale.x / deltaX);
         CheckBufferSize(initCount);

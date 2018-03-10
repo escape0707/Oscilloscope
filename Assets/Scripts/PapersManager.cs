@@ -4,9 +4,8 @@ using UnityEngine;
 
 /// <summary> 波的数据类型 </summary>
 using WaveData = System.Collections.Generic.LinkedList<WaveController.WaveAttribute>;
-/// <summary> 代表一条正弦波的参数组，由三个 <c>float: a, omega, phi</c> 组成 </summary>
+/// <summary> 代表一条正弦波的参数组，由 三个float: a, omega, phi 组成 </summary>
 using WaveAttribute = WaveController.WaveAttribute;
-using System;
 
 /// <summary> 
 /// 管理板子上纸片的生成、展示、修改等操作，
@@ -37,14 +36,14 @@ public class PapersManager : MonoBehaviour {
         // /// <summary> 对于当前节点的、对波形数据的修改 </summary>  
         // internal WaveAttribute changes;
     }
-    /// <summary> 用于在 <c>Hierarchy</c> 中收纳众多节点的 <c>Holder</c> 的 <c>Transform</c> </summary>
+    /// <summary> 用于在 Hierarchy 中收纳众多节点的 Holder 的 Transform </summary>
     private Transform papersHolderTransform;
     /// <summary> 多叉树的根节点 </summary>  
     private PaperNode rootNode;
     /// <summary> 当前被展开观察节点 </summary>  
     private PaperNode expandedNode;
 
-    /// <summary> 初始化 <c>Hierarchy</c> 中的 <c>Holder</c> </summary>
+    /// <summary> 初始化 Hierarchy 中的 Holder </summary>
     void InitialzieHolder() {
         papersHolderTransform = new GameObject("Papers").transform;
         papersHolderTransform.position = topLeftPosition;
@@ -53,7 +52,7 @@ public class PapersManager : MonoBehaviour {
         };
     }
 
-    // 计算屏幕上第 count 张纸片应有的 localPosition
+    // 计算屏幕上 第count张 纸片应有的 localPosition
     Vector3 CalcPosition(int count) {
         float x = count % columns *  (WaveController.paperWeight + spacingX);
         float y = count / columns * -(WaveController.paperHeight + spacingY);
@@ -68,7 +67,7 @@ public class PapersManager : MonoBehaviour {
         // 新建一个节点，将新节点的波形数据设为 y = sin(x) 
         PaperNode newNode = new PaperNode {
             data = new WaveData(),
-            children = new LinkedList<PaperNode>()// TODO 更好的写法？ 如何方便的给自定义域 allocate ？如何避免手动写出 new 中类型？
+            children = new LinkedList<PaperNode>()// TODO 更好的写法？ 如何方便的给自定义域分配地址？如何避免手动写出 new 中类型？
         };
         newNode.data.AddLast(new WaveAttribute(WaveController.paperHeight / 2, 3)); // TODO：以后如果需要创建不同大小的纸片，何如？
         
@@ -78,8 +77,53 @@ public class PapersManager : MonoBehaviour {
         newNode.waveScript = paper.GetComponent<WaveController>();
         newNode.waveScript.waveData = newNode.data;
 
-        // 将新节点添加到当前展开节点 expandedNode 的子节点列表 children 中
+        // 将新节点添加到 当前展开节点expandedNode 的 子节点列表children 中
         expandedNode.children.AddLast(newNode);
+    }
+
+    ///  <summary> 重新整理并更新纸片们的位置 </summary>
+    /// <param name="listNode">整理开始的位置（expandedNode.children.LinkedListNode）</param>
+    void RepositionPapersStartFrom(LinkedListNode<PaperNode> listNode) {
+        int count = 0;
+        for (var i = expandedNode.children.First; i != listNode; i = i.Next)
+            ++count;
+        for (var i = listNode; i != null; i = i.Next)
+            i.Value.waveScript.transform.localPosition = CalcPosition(count++);
+    }
+
+    /// <summary> 删除纸片 </summary>
+    /// <remarks> 如果这个节点在其他地方有副本，则根据 C# 的垃圾回收规则，该节点的数据不会被彻底删除，
+    /// 这样也方便了合并操作。 </remarks>
+    /// <param name="listNode"> 被删除的纸片在所处 children 中对应的 LinkedListNode </param>
+    void DeleteNode(LinkedListNode<PaperNode> listNode) {
+        // 析构纸片对象
+        Destroy(listNode.Value.waveScript.gameObject);
+
+        // 从父节点（当前被展开观察节点）的孩子列表中删除
+        LinkedListNode<PaperNode> nextNode = listNode.Next;
+        expandedNode.children.Remove(listNode);
+
+        // 重新整理并更新纸片们的位置
+        if (nextNode != null)
+            RepositionPapersStartFrom(nextNode);
+    }
+
+    void OnGUI() {
+        // Make a background box
+        GUI.Box(new Rect(10,10,100,90), "PapersManager");
+    
+        // Make the first button. If it is pressed, create a new papar
+        if(GUI.Button(new Rect(20,40,80,20), "Create")) {
+            Debug.Log("Create");
+            CreateNode();
+        }
+    
+        // Make the second button. If it is pressed, delete the first and the last paper
+        if(GUI.Button(new Rect(20,70,80,20), "Delete")) {
+            Debug.Log("Delete");
+            DeleteNode(expandedNode.children.First);
+            DeleteNode(expandedNode.children.Last);
+        }
     }
 
     void Awake() { // TODO
