@@ -16,7 +16,9 @@ public class WaveController : MonoBehaviour {
     internal class WaveAttribute {
         internal float a, omega, phi;
         internal WaveAttribute(float a = 1, float omega = 1, float phi = 0) {
-            this.a = a; this.omega = omega; this.phi = phi;
+            this.a = a;
+            this.omega = omega;
+            this.phi = phi;
         }
     }
 
@@ -55,7 +57,7 @@ public class WaveController : MonoBehaviour {
     private static void CheckBufferSize(int size) {
         // 检查点坐标数据缓冲区 positions 是否已经分配
         if (positions == null)
-            positions = new Vector3[Mathf.NextPowerOfTwo(size)];    
+            positions = new Vector3[Mathf.NextPowerOfTwo(size)];
         // 如果已分配，检查点坐标数据缓冲区大小是否小于 size ，
         // 并调整大小到能容纳的下一个 2 的幂
         else if (positions.Length < size)
@@ -66,14 +68,14 @@ public class WaveController : MonoBehaviour {
     private float WaveFunction(float x) {
         float y = 0;
         foreach (WaveAttribute wa in waveData)
-            y += wa.a * Mathf.Sin(wa.omega * x + wa.phi); 
+            y += wa.a * Mathf.Sin(wa.omega * x + wa.phi);
         return y;
     }
 
     /// <summary> 初始化 LineRenderer </summary>
     private void InitializeLineRender() {
         // 计算初始化时点的总数
-        int initCount = (int)Math.Ceiling(paperTransform.localScale.x / deltaX);
+        int initCount = (int) Math.Ceiling(paperTransform.localScale.x / deltaX);
         CheckBufferSize(initCount);
 
         // 计算初始波形上各点的位置， t(x) = t0 - x
@@ -115,13 +117,13 @@ public class WaveController : MonoBehaviour {
         // (如果均未超出范围（尽管不应如此），则保留原本的 positionCount)
         for (int i = 0; i < positionCount; ++i)
             if ((positions[i].x += Time.deltaTime) > paperWeight) {
-                positionCount = i + 1; 		// 注意：这里下标为 i 的点，是要（保留）的
+                positionCount = i + 1; // 注意：这里下标为 i 的点，是要（保留）的
                 break;
             }
         // 将点顺移一个下标
         for (int i = positionCount; i > 0; --i)
             positions[i] = positions[i - 1];
-        
+
         // 计算新点的坐标，加入存储数组
         float y = WaveFunction(Time.time);
         positions[0] = new Vector3(0, y, 0);

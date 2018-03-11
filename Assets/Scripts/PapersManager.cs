@@ -36,15 +36,77 @@ public class PapersManager : MonoBehaviour {
         // internal bool lazy = false;
         // /// <summary> 对于当前节点的、对波形数据的修改 </summary>
         // internal WaveAttribute changes;
+
+        /// <summary> 空白默认构造函数 </summary>
+        internal PaperNode() { }
+
+        // /// <param name="allocChildren"> 是否给 children 分配空间 </param>
+        // internal PaperNode(bool allocChildren = false) { // TODO：真的需要这个构造函数吗？
+        //     if (allocChildren)
+        //         children = new LinkedList<PaperNode>();
+        // }
+
+        /// <summary> 按照 other.data 生成一个克隆 </summary>
+        internal PaperNode(PaperNode other) {
+            data = new WaveData(other.data);
+        }
+        /// <param name="wa"> 用来初始化 data 的 一个WaveAttribute  </param>
+        internal PaperNode(WaveAttribute wa) {
+            data = new WaveData();
+            data.AddLast(wa);
+        }
+    
+        /// <summary> 实例化纸片 </summary>
+        /// <param name="positionIndex"> 新纸片的位置 </param>
+        internal void InstantiatePaperAt(Vector3 position) {
+            // 实例化纸片，命名，连接好节点到 WaveController 的对应，连接好纸片的 waveData
+            GameObject paper = Instantiate(
+                PapersManager.instance.paperPrefab,
+                position,
+                Quaternion.identity,
+                PapersManager.instance.papersHolderTransform
+            );
+            paper.name = (nodeCount++).ToString();
+            waveScript = paper.GetComponent<WaveController>();
+            waveScript.waveData = data;
+        }
+
+        /// <summary> 析构纸片 </summary>
+        internal void DestroyPaper() {
+            Destroy(waveScript.gameObject);
+        }
+
+        /// <summary> 重设纸片位置 </summary>
+        /// <param name="position"> 纸片的新位置 </param>
+        internal void RepositionPaperTo(Vector3 position) {
+            waveScript.transform.localPosition = position;
+        }
+
+        /// <summary> 合并节点的 data </summary>
+        /// <param name="other"> 被合并 data 的节点 </param>
+        internal void MergeDataWith(PaperNode other) {
+            // var start = to.data.Last;
+            foreach (var waveAttribute in other.data)
+                data.AddLast(waveAttribute);
+            // start = start.Next;
+            // var end = to.data.Last;
+        }
+
+        /// <summary> 刷新波形 </summary>
+        internal void RefreshWave() {
+            waveScript.Refresh();
+        }
+
+        /// <summary> 总共创建过的节点的总数 </summary>
+        private static int nodeCount = 0;
     }
+
     /// <summary> 用于在 Hierarchy 中收纳众多节点的 Holder 的 Transform </summary>
     private Transform papersHolderTransform;
     /// <summary> 多叉树的根节点 </summary>
     private PaperNode rootNode;
     /// <summary> 当前被展开观察节点 </summary>
     private PaperNode expandedNode;
-    /// <summary> 总共创建过的节点的总数 </summary>
-    private int nodeCount = 0;
 
     /// <summary> 初始化 Hierarchy 中的 Holder </summary>
     private void InitialzieHolder() {
@@ -65,129 +127,117 @@ public class PapersManager : MonoBehaviour {
     // 备注：所有的操作必须以 PaperNode 为中心，以 WaveController 和纸片为外挂。
     //       否则会将一个可以单向映射的问题，复杂为双向映射。
 
-    /// <summary> 按照 PaperNode 实例化纸片 </summary>
-    /// <param name="node"> 所用 PaperNode </param>
-    /// <param name="positionIndex"> 新纸片（位置）的序数 </param>
-    /// <returns> 返回新纸片的 WaveController </returns>
-    private void InstantiateByNode(PaperNode node, int positionIndex) {
-        // 找到纸片的位置，实例化纸片，命名，连接好节点到 WaveController 的对应，连接好纸片的 waveData
-        Vector3 position = CalcPosition(positionIndex);
-        GameObject paper = Instantiate(paperPrefab, position, Quaternion.identity, papersHolderTransform);
-        paper.name = (nodeCount++).ToString();
-        node.waveScript = paper.GetComponent<WaveController>();
-        node.waveScript.waveData = node.data;
-    }
-
     /// <summary> 重新整理并更新纸片们的位置 </summary>
-    /// <param name="listNode">整理开始的位置（expandedNode.children.LinkedListNode）</param>
-    private void RepositionPapersStartFrom(LinkedListNode<PaperNode> listNode) {
+    /// <param name="LLNode">整理开始的位置（expandedNode.children.LinkedListNode）</param>
+    private void RepositionPapersStartFrom(LinkedListNode<PaperNode> LLNode) {
         int count = 0;
-        for (var i = expandedNode.children.First; i != listNode; i = i.Next)
+        for (var i = expandedNode.children.First; i != LLNode; i = i.Next)
             ++count;
-        for (var i = listNode; i != null; i = i.Next)
-            i.Value.waveScript.transform.localPosition = CalcPosition(count++);
+        for (var i = LLNode; i != null; i = i.Next)
+            i.Value.RepositionPaperTo(CalcPosition(count++));
     }
 
-    /// <summary> 创建新纸片 </summary>
+    /// <summary> 创建新节点 </summary>
     private void CreateNode() {
         // 新建一个节点，将新节点的波形数据设为 y = sin(x)
-        PaperNode newNode = new PaperNode {
-            data = new WaveData(),
-            children = new LinkedList<PaperNode>()// TODO 更好的写法？ 如何方便的给自定义域分配地址？如何避免手动写出 new 中类型？
-        };
-        newNode.data.AddLast(new WaveAttribute(WaveController.paperHeight / 2, 3)); // TODO：以后如果需要创建不同大小的纸片，何如？
+        PaperNode newNode = new PaperNode(new WaveAttribute(WaveController.paperHeight / 2, 3));
 
-        // 生成 paper对象
-        InstantiateByNode(newNode, expandedNode.children.Count);
+        // 生成对应纸片
+        newNode.InstantiatePaperAt(CalcPosition(expandedNode.children.Count));
 
         // 将新节点添加到 当前展开节点expandedNode 的 子节点列表children 中
         expandedNode.children.AddLast(newNode);
     }
 
-    /// <summary> 删除纸片 </summary>
-    /// /// <param name="listNode"> 被删除的纸片在所处 children 中对应的 LinkedListNode </param>
+    /// <summary> 根据节点删除纸片 </summary>
+    /// <param name="LLNode"> 被删除的纸片在所处 children 中对应的 LinkedListNode </param>
     /// <remarks> 如果这个节点在其他地方有引用，则根据 C# 的垃圾回收规则，该节点的数据不会被彻底删除；
     /// 反之，当没有任何一处引用指向这个节点时，即其实我们永远不能找回这个节点时，该节点会被自动垃圾回收。
     /// 本例中，当一个非 rootNode 的节点没有父节点时，它才会被回收。
     /// 这样恰好也方便了合并操作。 </remarks>
-    private void DeleteNode(LinkedListNode<PaperNode> listNode) {
-        // 从父节点（当前被展开观察节点）的孩子列表中删除
-        expandedNode.children.Remove(listNode);
+    private void DeleteNode(LinkedListNode<PaperNode> LLNode) {
+        // 存下 LLNode.Next 以便后面重设纸片位置
+        var next = LLNode.Next;
 
-        // 析构 paper 对象
-        Destroy(listNode.Value.waveScript.gameObject);
+        // 从父节点（当前被展开观察节点）的孩子列表中删除
+        expandedNode.children.Remove(LLNode);
+
+        // 析构 paper 对象  P.S.: C# 真奇怪，留 Value 不留 Next。。。。
+        LLNode.Value.DestroyPaper();
 
         // 重新整理并更新纸片们的位置
-        if (listNode.Next != null)
-            RepositionPapersStartFrom(listNode.Next);
+        if (next != null)
+            RepositionPapersStartFrom(next);
     }
 
-    /// <summary> 合并纸片 </summary>
-    /// <param name="sonLLNode"> 被拖动的纸片在原所处 children 中对应的 LinkedListNode </param>
-    /// <param name="fatherLLNode"> 被添加的纸片在所处 children 中对应的 LinkedListNode </param>
-    private void MergeNodes(LinkedListNode<PaperNode> sonLLNode, LinkedListNode<PaperNode> fatherLLNode) {
-        PaperNode son = sonLLNode.Value;
-        PaperNode father = fatherLLNode.Value;
+    /// <summary> 合并节点 </summary>
+    /// <param name="fromNode"> 被拖动的纸片在原所处 children 中对应的 LinkedListNode </param>
+    /// <param name="toNode"> 被添加的纸片在所处 children 中对应的 LinkedListNode </param>
+    private void MergeNodes(LinkedListNode<PaperNode> fromNode, LinkedListNode<PaperNode> toNode) { // TODO: 合并后要有一个父节点，包含原本两个节点才行
+        PaperNode from = fromNode.Value;
+        PaperNode to = toNode.Value;
 
-        // 被并购数据
-        // var start = to.data.Last;
-        foreach (var waveAttribute in son.data)
-            father.data.AddLast(waveAttribute);
-        // start = start.Next;
-        // var end = to.data.Last;
-        father.waveScript.Refresh();
+        // 如果被合并节点是叶子节点，晋升为一个纸片组的代表（非叶子节点）
+        if (to.children == null) {
+            to.children = new LinkedList<PaperNode>();
+            // 生成一个有相同 data 的克隆，添到子节点
+            to.children.AddFirst(new PaperNode(to));
+        }
 
-        // 认人为父
-        father.children.AddLast(son);
+        // 被并购数据，认人为父
+        to.MergeDataWith(from);
+        to.RefreshWave();
+        to.children.AddLast(from);
 
         // 不堪其辱：“我选择死亡！”
-        // 注：son 仍在 father.children 中有引用，故数据不会被彻底删除，
+        // 注： from 仍在 to.children 中有引用，故数据不会被删除，
         //     只会 Destroy 对应纸片、重排、并从原父节点下移除。
-        DeleteNode(sonLLNode);
+        DeleteNode(fromNode);
+
     }
 
-    /// <summary> 展开（观察）纸片 </summary>
-    /// <param name="listNode"> 被展开的纸片在所处 children 中对应的 LinkedListNode </param>
-    private void ExpandNode(LinkedListNode<PaperNode> listNode) { // TODO
+    /// <summary> 展开（观察）节点 </summary>
+    /// <param name="LLNode"> 被展开的纸片在所处 children 中对应的 LinkedListNode </param>
+    private void ExpandNode(LinkedListNode<PaperNode> LLNode) { // TODO
         // 析构当前可见纸片
         foreach (var child in expandedNode.children)
-            Destroy(child.waveScript.gameObject);
+            child.DestroyPaper();
 
-        // 将 listNode 设置为 展开的纸片expandedNode
-        expandedNode = listNode.Value;
+        // 将 LLNode 设置为 展开的纸片expandedNode
+        expandedNode = LLNode.Value;
 
         // 生成新一波纸片
         int count = 0;
         foreach (var child in expandedNode.children)
-            InstantiateByNode(child, count++);
+            child.InstantiatePaperAt(CalcPosition(count++));
     }
 
 
     void OnGUI() {
         // Make a background box
-        GUI.Box(new Rect(10,10,100,150), "PapersManager");
+        GUI.Box(new Rect(10, 10, 100, 150), "PapersManager");
 
         // Make the first button. If it is pressed, create a new papar
-        if(GUI.Button(new Rect(20,40,80,20), "Create")) {
+        if (GUI.Button(new Rect(20, 40, 80, 20), "Create")) {
             Debug.Log("Create");
             CreateNode();
         }
 
         // Make the second button. If it is pressed, delete the first and the last paper
-        if(GUI.Button(new Rect(20,70,80,20), "Delete")) {
+        if (GUI.Button(new Rect(20, 70, 80, 20), "Delete")) {
             Debug.Log("Delete");
-            DeletePaperByNode(expandedNode.children.First);
-            DeletePaperByNode(expandedNode.children.Last);
+            DeleteNode(expandedNode.children.First);
+            DeleteNode(expandedNode.children.Last);
         }
 
         // Make the third button. If it is pressed, merge from the first to the last paper
-        if(GUI.Button(new Rect(20,100,80,20), "Merge")) {
+        if (GUI.Button(new Rect(20, 100, 80, 20), "Merge")) {
             Debug.Log("Merge");
             MergeNodes(expandedNode.children.First, expandedNode.children.Last);
         }
 
         // Make the forth button. If it is pressed, expand the last paper
-        if(GUI.Button(new Rect(20,130,80,20), "Expand")) {
+        if (GUI.Button(new Rect(20, 130, 80, 20), "Expand")) {
             Debug.Log("Expand");
             ExpandNode(expandedNode.children.Last);
         }

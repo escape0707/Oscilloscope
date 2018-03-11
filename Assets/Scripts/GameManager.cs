@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,8 +9,7 @@ public class GameManager : MonoBehaviour {
         if (instance == null) {
             instance = this;
             PapersManager.instance = GetComponent<PapersManager>();
-        }
-        else if (instance != this)
+        } else if (instance != this)
             Destroy(gameObject);
 
         DontDestroyOnLoad(gameObject);
