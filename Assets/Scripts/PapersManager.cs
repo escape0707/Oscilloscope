@@ -21,11 +21,15 @@ public class PapersManager : MonoBehaviour {
     /// <summary> 纸片组的列数 </summary>
     private const int columns = 3;
     /// <summary> 纸片间的间隔 </summary>
-    private const float spacingX = .5f, spacingY = .5f;
+    private const float spacingX = .5f;
+    private const float spacingY = .5f;
+    private const float testRatio = 0.8f;
 
 
     /// <summary> 纸片对应的树中的节点 </summary>
     private class PaperNode {
+        /// <summary> 父节点 </summary>
+        internal PaperNode father;
         /// <summary> 子节点的链表 </summary>
         internal LinkedList<PaperNode> children;
         /// <summary> 当前节点的波形数据 </summary>
@@ -40,22 +44,17 @@ public class PapersManager : MonoBehaviour {
         /// <summary> 空白默认构造函数 </summary>
         internal PaperNode() { }
 
-        // /// <param name="allocChildren"> 是否给 children 分配空间 </param>
-        // internal PaperNode(bool allocChildren = false) { // TODO：真的需要这个构造函数吗？
-        //     if (allocChildren)
-        //         children = new LinkedList<PaperNode>();
-        // }
-
         /// <summary> 按照 other.data 生成一个克隆 </summary>
         internal PaperNode(PaperNode other) {
             data = new WaveData(other.data);
         }
+
         /// <param name="wa"> 用来初始化 data 的 一个WaveAttribute  </param>
         internal PaperNode(WaveAttribute wa) {
             data = new WaveData();
             data.AddLast(wa);
         }
-    
+
         /// <summary> 实例化纸片 </summary>
         /// <param name="positionIndex"> 新纸片的位置 </param>
         internal void InstantiatePaperAt(Vector3 position) {
@@ -119,7 +118,7 @@ public class PapersManager : MonoBehaviour {
 
     // 计算屏幕上 第count张 纸片应有的 localPosition
     private static Vector3 CalcPosition(int count) {
-        float x = count % columns *  (WaveController.paperWeight + spacingX);
+        float x = count % columns * (WaveController.paperWeight + spacingX);
         float y = count / columns * -(WaveController.paperHeight + spacingY);
         return new Vector3(x, y, 0);
     }
@@ -140,7 +139,10 @@ public class PapersManager : MonoBehaviour {
     /// <summary> 创建新节点 </summary>
     private void CreateNode() {
         // 新建一个节点，将新节点的波形数据设为 y = sin(x)
-        PaperNode newNode = new PaperNode(new WaveAttribute(WaveController.paperHeight / 2, 3));
+        PaperNode newNode = new PaperNode(new WaveAttribute(WaveController.paperHeight * testRatio / 2, 3));
+
+        // 记录新节点的父节点
+        newNode.father = expandedNode;
 
         // 生成对应纸片
         newNode.InstantiatePaperAt(CalcPosition(expandedNode.children.Count));
@@ -173,7 +175,7 @@ public class PapersManager : MonoBehaviour {
     /// <summary> 合并节点 </summary>
     /// <param name="fromNode"> 被拖动的纸片在原所处 children 中对应的 LinkedListNode </param>
     /// <param name="toNode"> 被添加的纸片在所处 children 中对应的 LinkedListNode </param>
-    private void MergeNodes(LinkedListNode<PaperNode> fromNode, LinkedListNode<PaperNode> toNode) { // TODO: 合并后要有一个父节点，包含原本两个节点才行
+    private void MergeNodes(LinkedListNode<PaperNode> fromNode, LinkedListNode<PaperNode> toNode) {
         PaperNode from = fromNode.Value;
         PaperNode to = toNode.Value;
 
@@ -181,30 +183,33 @@ public class PapersManager : MonoBehaviour {
         if (to.children == null) {
             to.children = new LinkedList<PaperNode>();
             // 生成一个有相同 data 的克隆，添到子节点
-            to.children.AddFirst(new PaperNode(to));
+            PaperNode clone = new PaperNode(to);
+            clone.father = to;
+            to.children.AddFirst(clone);
         }
 
         // 被并购数据，认人为父
         to.MergeDataWith(from);
         to.RefreshWave();
+        from.father = to;
         to.children.AddLast(from);
 
         // 不堪其辱：“我选择死亡！”
         // 注： from 仍在 to.children 中有引用，故数据不会被删除，
-        //     只会 Destroy 对应纸片、重排、并从原父节点下移除。
+        //      只会 Destroy 对应纸片、重排、并从原父节点下移除。
         DeleteNode(fromNode);
 
     }
 
     /// <summary> 展开（观察）节点 </summary>
-    /// <param name="LLNode"> 被展开的纸片在所处 children 中对应的 LinkedListNode </param>
-    private void ExpandNode(LinkedListNode<PaperNode> LLNode) { // TODO
+    /// <param name="node"> 要展开的纸片对应的 PaperNode </param>
+    private void ExpandNode(PaperNode node) {
         // 析构当前可见纸片
         foreach (var child in expandedNode.children)
             child.DestroyPaper();
 
         // 将 LLNode 设置为 展开的纸片expandedNode
-        expandedNode = LLNode.Value;
+        expandedNode = node;
 
         // 生成新一波纸片
         int count = 0;
@@ -212,34 +217,75 @@ public class PapersManager : MonoBehaviour {
             child.InstantiatePaperAt(CalcPosition(count++));
     }
 
+    /// <summary> 折叠正在观察的节点并返回上一层 </summary>
+    private void CollapseNode() {
+        ExpandNode(expandedNode.father);
+    }
+
 
     void OnGUI() {
         // Make a background box
-        GUI.Box(new Rect(10, 10, 100, 150), "PapersManager");
+        GUI.Box(new Rect(10, 10, 100, 180), "PapersManager");
 
         // Make the first button. If it is pressed, create a new papar
         if (GUI.Button(new Rect(20, 40, 80, 20), "Create")) {
-            Debug.Log("Create");
+            Debug.Log("Creating...");
             CreateNode();
+            Debug.Log("Created");
         }
 
         // Make the second button. If it is pressed, delete the first and the last paper
         if (GUI.Button(new Rect(20, 70, 80, 20), "Delete")) {
-            Debug.Log("Delete");
-            DeleteNode(expandedNode.children.First);
-            DeleteNode(expandedNode.children.Last);
+            Debug.Log("Deleting...");
+            if (expandedNode.children.Count == 0)
+                Debug.Log("Already empty!");
+            else {
+                DeleteNode(expandedNode.children.First);
+                if (expandedNode.children.Count == 0)
+                    Debug.Log("Only deleted one!");
+                else {
+                    DeleteNode(expandedNode.children.Last);
+                    Debug.Log("Deleted");
+                }
+            }
         }
 
         // Make the third button. If it is pressed, merge from the first to the last paper
         if (GUI.Button(new Rect(20, 100, 80, 20), "Merge")) {
-            Debug.Log("Merge");
-            MergeNodes(expandedNode.children.First, expandedNode.children.Last);
+            Debug.Log("Merging...");
+            if (expandedNode.children.Count < 2)
+                Debug.Log("Not enough nodes!");
+            else {
+                MergeNodes(expandedNode.children.First, expandedNode.children.Last);
+                Debug.Log("Merged");
+            }
         }
 
         // Make the forth button. If it is pressed, expand the last paper
         if (GUI.Button(new Rect(20, 130, 80, 20), "Expand")) {
-            Debug.Log("Expand");
-            ExpandNode(expandedNode.children.Last);
+            Debug.Log("Expanding");
+            try {
+                PaperNode lastChild = expandedNode.children.Last.Value;
+                if (lastChild.children.Count < 2)
+                    Debug.Log("Not enough children!");
+                else {
+                    ExpandNode(lastChild);
+                    Debug.Log("Expanded");
+                }
+            } catch (System.NullReferenceException) {
+                Debug.Log("No child!");
+            }
+        }
+
+        // Make the fifth button. If it is pressed, collapse and revert to previous view
+        if (GUI.Button(new Rect(20, 160, 80, 20), "Collapse")) {
+            Debug.Log("Collapsing");
+            if (expandedNode.father == null)
+                Debug.Log("Already at rootNode!");
+            else {
+                CollapseNode();
+                Debug.Log("Collapsed");
+            }
         }
     }
 
