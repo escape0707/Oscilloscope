@@ -1,10 +1,7 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-/// <summary> 波的数据类型 </summary>
-using WaveData = System.Collections.Generic.LinkedList<WaveController.WaveAttribute>;
-/// <summary> 代表一条正弦波的参数组，由 三个float: a, omega, phi 组成 </summary>
-using WaveAttribute = WaveController.WaveAttribute;
 
 /// <summary>
 /// 管理板子上纸片的生成、展示、修改等操作，
@@ -23,7 +20,8 @@ public class PapersManager : MonoBehaviour {
     /// <summary> 纸片间的间隔 </summary>
     private const float spacingX = .5f;
     private const float spacingY = .5f;
-    private const float testRatio = 0.8f;
+    /// <summary> 波形高度乘数（仅测试用） </summary> // TODO
+    private const float testRatio = .8f;
 
 
     /// <summary> 纸片对应的树中的节点 </summary>
@@ -44,10 +42,10 @@ public class PapersManager : MonoBehaviour {
         /// <summary> 空白默认构造函数 </summary>
         internal PaperNode() { }
 
-        /// <summary> 按照 other.data 生成一个克隆 </summary>
-        internal PaperNode(PaperNode other) {
-            data = new WaveData(other.data);
-        }
+        // /// <summary> 按照 other.data 生成一个克隆 </summary>
+        // internal PaperNode(PaperNode other) {
+        //     data = new WaveData(other.data);
+        // }
 
         /// <param name="wa"> 用来初始化 data 的 一个WaveAttribute  </param>
         internal PaperNode(WaveAttribute wa) {
@@ -291,5 +289,78 @@ public class PapersManager : MonoBehaviour {
 
     void Awake() { // TODO
         InitialzieHolder();
+    }
+}
+
+/// <summary> 波的数据——记录波的数据在总存储链表中的起始和终止节点 </summary>
+internal class WaveData : IEnumerable<WaveAttribute> {
+    /// <summary> 波的数据的链表的节点 </summary>
+    private class WaveDataNode {
+        internal WaveDataNode Prevous, Next;
+        internal WaveAttribute Value;
+    }
+
+    WaveDataNode First;
+    WaveDataNode Last;
+
+    // /// <summary> 初始化构造函数 </summary>
+    // internal WaveData(WaveDataNode First, WaveDataNode Last) {
+    //     this.First = First;
+    //     this.Last = Last;
+    // }
+
+    // /// <summary> 拷贝构造函数 </summary>
+    // internal WaveData(WaveData other) {
+    //     First = other.First;
+    //     Last = other.Last;
+    // }
+
+    public IEnumerator<WaveAttribute> GetEnumerator() {
+        return new WaveDataEnumerator(this);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() {
+        return GetEnumerator();
+    }
+
+    private class WaveDataEnumerator : IEnumerator<WaveAttribute> {
+        private WaveData wd;
+        private WaveDataNode node = null;
+
+        internal WaveDataEnumerator(WaveData wd) {
+            this.wd = wd;
+        }
+
+        public WaveAttribute Current {
+            get {
+                try {
+                    return node.Value;
+                } catch (NullReferenceException) {
+                    throw new InvalidOperationException();
+                }
+            }
+        }
+
+        object IEnumerator.Current {
+            get {
+                return Current;
+            }
+        }
+
+        public void Dispose() {
+            throw new NotImplementedException();
+        }
+
+        public bool MoveNext() {
+            if (node != null)
+                node = node.Next;
+            else
+                node = wd.First;
+            return node == wd.Last;
+        }
+
+        public void Reset() {
+            node = null;
+        }
     }
 }

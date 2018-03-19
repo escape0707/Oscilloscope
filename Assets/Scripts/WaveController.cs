@@ -3,25 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary> 波的数据类型 </summary>
-using WaveData = System.Collections.Generic.LinkedList<WaveController.WaveAttribute>;
-
 /// <summary> 
 /// 此脚本用于控制其 GameObject 的 LineRenderer 中点的数据，
 /// 使用时请设置好 waveData
 /// </summary>
 public class WaveController : MonoBehaviour {
-
-    /// <summary> 代表一条正弦波的参数组，由三个 float: a, omega, phi 组成 </summary>
-    internal class WaveAttribute {
-        internal float a, omega, phi;
-        internal WaveAttribute(float a = 1, float omega = 1, float phi = 0) {
-            this.a = a;
-            this.omega = omega;
-            this.phi = phi;
-        }
-    }
-
     /// <summary> 波形所在的纸片的 transform </summary>
     public Transform paperTransform;
     /// <summary> 波形显示对象 Waveform 的 LineRenderer </summary>
@@ -35,18 +21,11 @@ public class WaveController : MonoBehaviour {
     /// <summary> 当前 WaveController 所采用的波形数据源 </summary>
     internal WaveData waveData;
 
-    /// <summary> 设置为下一次 Update 时重新初始化 LineRenderer </summary>
-    internal void SetOutOfDate() {
-        lineRenderer.positionCount = 0;
-        isInitialized = false;
-    }
-
     /// <summary> 立即重新初始化 LineRenderer </summary>
     internal void Refresh() {
         lineRenderer.positionCount = 0;
         InitializeLineRender();
     }
-
 
     /// <summary> WaveController 是否已经初始化 </summary>
     private bool isInitialized = false;
@@ -132,5 +111,15 @@ public class WaveController : MonoBehaviour {
         // 更新 LineRenderer
         lineRenderer.positionCount = positionCount;
         lineRenderer.SetPositions(positions);
+    }
+}
+
+/// <summary> 代表一条正弦波的参数组，由三个 float: a, omega, phi 组成 </summary>
+internal class WaveAttribute {
+    internal float a, omega, phi;
+    internal WaveAttribute(float a = 1, float omega = 1, float phi = 0) {
+        this.a = a;
+        this.omega = omega;
+        this.phi = phi;
     }
 }
