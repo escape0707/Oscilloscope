@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 /// <summary> 波的数据 —— 数据起始的链表节点 和 数据终止的链表节点 </summary>
 internal class WaveData : IEnumerable<WaveAttribute> {
-    WaveDataNode First;
-    WaveDataNode Last;
+    private WaveDataNode First;
+    private WaveDataNode Last;
 
     // /// <summary> 初始化构造函数 </summary>
     // internal WaveData(WaveDataNode First, WaveDataNode Last) {
@@ -17,6 +17,27 @@ internal class WaveData : IEnumerable<WaveAttribute> {
     // internal WaveData(WaveData other) {
     //     First = other.First;
     //     Last = other.Last;
+    // }
+
+    // /// <param name="firstWA"> 链表要包含的第一个 WaveAttribute </param>
+    // /// <param name="list"> 链表要包含的后续所有 WaveAttribute </param>
+    // internal WaveData(WaveAttribute firstWA, params WaveAttribute[] list) {
+    //     // 初始化首节点和末节点
+    //     First = new WaveDataNode { Value = firstWA };
+    //     Last = First;
+
+    //     // 如有更多 WaveAttribute 继续添加
+    //     foreach (WaveAttribute wa in list)
+    //         AddLast(wa);
+    // }
+
+    // /// <summary> 在链表最后插入节点 </summary>
+    // void AddLast(WaveAttribute wa) {
+    //     Last = Last.Next = new WaveDataNode {
+    //         Prevous = Last,
+    //         Next = null,
+    //         Value = wa
+    //     };
     // }
 
     #region IEnumerable 的实现

@@ -6,7 +6,6 @@ using UnityEngine;
 /// 存储数据结构是多叉树。
 /// </summary>
 public class PapersManager : MonoBehaviour {
-
     /// <summary> 纸片 <c>Prefab</c> </summary>
     public GameObject paperPrefab;
     /// <summary> 纸片组最左上点的位置 </summary>
@@ -20,7 +19,6 @@ public class PapersManager : MonoBehaviour {
     private const float spacingY = .5f;
     /// <summary> 波形高度乘数（仅测试用） </summary> // TODO
     private const float testRatio = .8f;
-
 
     /// <summary> 纸片对应的树中的节点 </summary>
     private class PaperNode {
@@ -50,6 +48,35 @@ public class PapersManager : MonoBehaviour {
             data = new WaveData();
             data.AddLast(wa);
         }
+
+        // /// <summary> 将数据从原有链表中删除（剪切出来） </summary>
+        // internal void CutOut() {
+        //     WaveDataNode first = data.First;
+        //     WaveDataNode last = data.Last;
+        //     WaveDataNode outerLast = first.Prevous;
+        //     WaveDataNode outerFirst = last.Next;
+        //     if (outerLast != null)
+        //         outerLast.Next = outerFirst;
+        //     if (outerFirst != null)
+        //         outerFirst.Prevous = outerLast;
+        // }
+
+        // /// <summary> 将数据接到 other 的数据的末尾 </summary>
+        // internal void AppendTo(PaperNode other) {
+        //     WaveDataNode first = data.First;
+        //     WaveDataNode last = data.Last;
+        //     WaveDataNode outerLast = other.data.Last;
+        //     WaveDataNode outerFirst = other.data.Last.Next;
+        //     first.Prevous = outerLast;
+        //     last.Next = outerFirst;
+        //     outerLast.Next = first;
+        //     if (outerFirst != null)
+        //         outerFirst.Prevous = last;
+        // }
+
+        #region Operations of Paper // TODO
+        /// <summary> 总共创建过的节点的总数 </summary>
+        static int nodeCount = 0; // TODO
 
         /// <summary> 实例化纸片 </summary>
         /// <param name="positionIndex"> 新纸片的位置 </param>
@@ -94,6 +121,7 @@ public class PapersManager : MonoBehaviour {
 
         /// <summary> 总共创建过的节点的总数 </summary>
         private static int nodeCount = 0;
+        #endregion
     }
 
     /// <summary> 用于在 Hierarchy 中收纳众多节点的 Holder 的 Transform </summary>
@@ -289,4 +317,3 @@ public class PapersManager : MonoBehaviour {
         InitialzieHolder();
     }
 }
-

@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary> 
@@ -15,7 +13,6 @@ public class WaveController : MonoBehaviour {
     /// <summary> 波形展示区的宽度 </summary>
     internal const float paperWeight = 2; // TODO: 这里暂时还是写死的，为了方便之后实例化不同高宽的纸片，应该怎么做？
     // 回答：要么把宽度和高度当成静态变量用，要么每次生成的时候要求显示传递设置
-
     /// <summary> 波形展示区的高度 </summary>
     internal const float paperHeight = 1; // TODO: 如果波形超过了上下界，何如？
     
