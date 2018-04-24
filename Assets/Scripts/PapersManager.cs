@@ -132,7 +132,7 @@ public class PapersManager : MonoBehaviour {
     private PaperNode expandedNode;
 
     /// <summary> 初始化 Hierarchy 中的 Holder </summary>
-    private void InitialzieHolder() {
+    private void InitializeHolder() {
         papersHolderTransform = new GameObject("Papers").transform;
         papersHolderTransform.position = topLeftPosition;
         expandedNode = rootNode = new PaperNode {
@@ -314,6 +314,6 @@ public class PapersManager : MonoBehaviour {
     }
 
     void Awake() { // TODO
-        InitialzieHolder();
+        InitializeHolder();
     }
 }
