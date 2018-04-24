@@ -6,123 +6,21 @@ using UnityEngine;
 /// 存储数据结构是多叉树。
 /// </summary>
 public class PapersManager : MonoBehaviour {
-    /// <summary> 纸片 <c>Prefab</c> </summary>
-    public GameObject paperPrefab;
-    /// <summary> 纸片组最左上点的位置 </summary>
-    public Vector3 topLeftPosition;
-    /// <summary> PapersManager's Singleton </summary>
-    internal static PapersManager instance = null;
     /// <summary> 纸片组的列数 </summary>
     private const int columns = 3;
-    /// <summary> 纸片间的间隔 </summary>
+    /// <summary> 纸片间的横向间隔 </summary>
     private const float spacingX = .5f;
+    /// <summary> 纸片间的纵向间隔 </summary>
     private const float spacingY = .5f;
     /// <summary> 波形高度乘数（仅测试用） </summary> // TODO
     private const float testRatio = .8f;
 
-    /// <summary> 纸片对应的树中的节点 </summary>
-    private class PaperNode {
-        /// <summary> 父节点 </summary>
-        internal PaperNode father;
-        /// <summary> 子节点的链表 </summary>
-        internal LinkedList<PaperNode> children;
-        /// <summary> 当前节点的波形数据 </summary>
-        private WaveData data;
-        /// <summary> 节点对应纸片的脚本 </summary>
-        private WaveController waveScript;
-        // /// <summary> 懒标签：是否仍有“修改”未被下放到当前节点的子节点中去 </summary>
-        // internal bool lazy = false;
-        // /// <summary> 对于当前节点的、对波形数据的修改 </summary>
-        // internal WaveAttribute changes;
-
-        /// <summary> 空白默认构造函数 </summary>
-        internal PaperNode() { }
-
-        // /// <summary> 按照 other.data 生成一个克隆 </summary>
-        // internal PaperNode(PaperNode other) {
-        //     data = new WaveData(other.data);
-        // }
-
-        /// <param name="wa"> 用来初始化 data 的 一个WaveAttribute  </param>
-        internal PaperNode(WaveAttribute wa) {
-            data = new WaveData();
-            data.AddLast(wa);
-        }
-
-        // /// <summary> 将数据从原有链表中删除（剪切出来） </summary>
-        // internal void CutOut() {
-        //     WaveDataNode first = data.First;
-        //     WaveDataNode last = data.Last;
-        //     WaveDataNode outerLast = first.Prevous;
-        //     WaveDataNode outerFirst = last.Next;
-        //     if (outerLast != null)
-        //         outerLast.Next = outerFirst;
-        //     if (outerFirst != null)
-        //         outerFirst.Prevous = outerLast;
-        // }
-
-        // /// <summary> 将数据接到 other 的数据的末尾 </summary>
-        // internal void AppendTo(PaperNode other) {
-        //     WaveDataNode first = data.First;
-        //     WaveDataNode last = data.Last;
-        //     WaveDataNode outerLast = other.data.Last;
-        //     WaveDataNode outerFirst = other.data.Last.Next;
-        //     first.Prevous = outerLast;
-        //     last.Next = outerFirst;
-        //     outerLast.Next = first;
-        //     if (outerFirst != null)
-        //         outerFirst.Prevous = last;
-        // }
-
-        #region Operations of Paper // TODO
-        /// <summary> 总共创建过的节点的总数 </summary>
-        static int nodeCount = 0; // TODO
-
-        /// <summary> 实例化纸片 </summary>
-        /// <param name="positionIndex"> 新纸片的位置 </param>
-        internal void InstantiatePaperAt(Vector3 position) {
-            // 实例化纸片，命名，连接好节点到 WaveController 的对应，连接好纸片的 waveData
-            GameObject paper = Instantiate(
-                PapersManager.instance.paperPrefab,
-                position,
-                Quaternion.identity,
-                PapersManager.instance.papersHolderTransform
-            );
-            paper.name = (nodeCount++).ToString();
-            waveScript = paper.GetComponent<WaveController>();
-            waveScript.waveData = data;
-        }
-
-        /// <summary> 析构纸片 </summary>
-        internal void DestroyPaper() {
-            Destroy(waveScript.gameObject);
-        }
-
-        /// <summary> 重设纸片位置 </summary>
-        /// <param name="position"> 纸片的新位置 </param>
-        internal void RepositionPaperTo(Vector3 position) {
-            waveScript.transform.localPosition = position;
-        }
-
-        /// <summary> 合并节点的 data </summary>
-        /// <param name="other"> 被合并 data 的节点 </param>
-        internal void MergeDataWith(PaperNode other) {
-            // var start = to.data.Last;
-            foreach (var waveAttribute in other.data)
-                data.AddLast(waveAttribute);
-            // start = start.Next;
-            // var end = to.data.Last;
-        }
-
-        /// <summary> 刷新波形 </summary>
-        internal void RefreshWave() {
-            waveScript.Refresh();
-        }
-
-        /// <summary> 总共创建过的节点的总数 </summary>
-        private static int nodeCount = 0;
-        #endregion
-    }
+    /// <summary> 纸片 Prefab </summary>
+    public GameObject paperPrefab;
+    /// <summary> 纸片组最左上点的位置 </summary>
+    public Vector3 topLeftPosition;
+    // /// <summary> PapersManager's Singleton </summary>
+    // internal static PapersManager instance = null;
 
     /// <summary> 用于在 Hierarchy 中收纳众多节点的 Holder 的 Transform </summary>
     private Transform papersHolderTransform;
@@ -131,6 +29,13 @@ public class PapersManager : MonoBehaviour {
     /// <summary> 当前被展开观察节点 </summary>
     private PaperNode expandedNode;
 
+    // 计算屏幕上 第count张 纸片应有的 localPosition
+    private static Vector3 CalcPosition(int count) {
+        float x = count % columns * (WaveController.PaperWeight + spacingX);
+        float y = count / columns * -(WaveController.PaperHeight + spacingY);
+        return new Vector3(x, y, 0);
+    }
+
     /// <summary> 初始化 Hierarchy 中的 Holder </summary>
     private void InitializeHolder() {
         papersHolderTransform = new GameObject("Papers").transform;
@@ -138,13 +43,6 @@ public class PapersManager : MonoBehaviour {
         expandedNode = rootNode = new PaperNode {
             children = new LinkedList<PaperNode>()
         };
-    }
-
-    // 计算屏幕上 第count张 纸片应有的 localPosition
-    private static Vector3 CalcPosition(int count) {
-        float x = count % columns * (WaveController.paperWeight + spacingX);
-        float y = count / columns * -(WaveController.paperHeight + spacingY);
-        return new Vector3(x, y, 0);
     }
 
     // 备注：所有的操作必须以 PaperNode 为中心，以 WaveController 和纸片为外挂。
@@ -160,10 +58,11 @@ public class PapersManager : MonoBehaviour {
             i.Value.RepositionPaperTo(CalcPosition(count++));
     }
 
+    #region 纸片基本操作
     /// <summary> 创建新节点 </summary>
     private void CreateNode() {
         // 新建一个节点，将新节点的波形数据设为 y = sin(x)
-        PaperNode newNode = new PaperNode(new WaveAttribute(WaveController.paperHeight * testRatio / 2, 3));
+        PaperNode newNode = new PaperNode(new WaveAttribute(WaveController.PaperHeight * testRatio / 2, 3));
 
         // 记录新节点的父节点
         newNode.father = expandedNode;
@@ -245,9 +144,10 @@ public class PapersManager : MonoBehaviour {
     private void CollapseNode() {
         ExpandNode(expandedNode.father);
     }
+    #endregion
 
-
-    void OnGUI() {
+    /// <summary> Debug </summary>
+    private void OnGUI() {
         // Make a background box
         GUI.Box(new Rect(10, 10, 100, 180), "PapersManager");
 
@@ -313,7 +213,108 @@ public class PapersManager : MonoBehaviour {
         }
     }
 
-    void Awake() { // TODO
+    private void Awake() { // TODO
         InitializeHolder();
+    }
+
+    /// <summary> 纸片对应的树中的节点 </summary>
+    private class PaperNode {
+        /// <summary> 父节点 </summary>
+        internal PaperNode father;
+        /// <summary> 子节点的链表 </summary>
+        internal LinkedList<PaperNode> children;
+        /// <summary> 当前节点的波形数据 </summary>
+        private WaveData data;
+        /// <summary> 节点对应纸片的脚本 </summary>
+        private WaveController waveScript;
+        // /// <summary> 懒标签：是否仍有“修改”未被下放到当前节点的子节点中去 </summary>
+        // internal bool lazy = false;
+        // /// <summary> 对于当前节点的、对波形数据的修改 </summary>
+        // internal WaveAttribute changes;
+
+        /// <summary> 空白默认构造函数 </summary>
+        internal PaperNode() { }
+
+        // /// <summary> 按照 other.data 生成一个克隆 </summary>
+        // internal PaperNode(PaperNode other) {
+        //     data = new WaveData(other.data);
+        // }
+
+        /// <param name="wa"> 用来初始化 data 的 一个WaveAttribute  </param>
+        internal PaperNode(WaveAttribute wa) {
+            data = new WaveData();
+            data.AddLast(wa);
+        }
+
+        // /// <summary> 将数据从原有链表中删除（剪切出来） </summary>
+        // internal void CutOut() {
+        //     WaveDataNode first = data.First;
+        //     WaveDataNode last = data.Last;
+        //     WaveDataNode outerLast = first.Prevous;
+        //     WaveDataNode outerFirst = last.Next;
+        //     if (outerLast != null)
+        //         outerLast.Next = outerFirst;
+        //     if (outerFirst != null)
+        //         outerFirst.Prevous = outerLast;
+        // }
+
+        // /// <summary> 将数据接到 other 的数据的末尾 </summary>
+        // internal void AppendTo(PaperNode other) {
+        //     WaveDataNode first = data.First;
+        //     WaveDataNode last = data.Last;
+        //     WaveDataNode outerLast = other.data.Last;
+        //     WaveDataNode outerFirst = other.data.Last.Next;
+        //     first.Prevous = outerLast;
+        //     last.Next = outerFirst;
+        //     outerLast.Next = first;
+        //     if (outerFirst != null)
+        //         outerFirst.Prevous = last;
+        // }
+
+        #region Operations of Paper // TODO
+        /// <summary> 总共创建过的节点的总数 </summary>
+        private static int nodeCount = 0; // TODO
+
+        /// <summary> 实例化纸片 </summary>
+        /// <param name="positionIndex"> 新纸片的位置 </param>
+        internal void InstantiatePaperAt(Vector3 position) {
+            // 实例化纸片，命名，连接好节点到 WaveController 的对应，连接好纸片的 waveData
+            GameObject paper = Instantiate(
+                PapersManager.instance.paperPrefab,
+                position,
+                Quaternion.identity,
+                PapersManager.instance.papersHolderTransform
+            );
+            paper.name = (nodeCount++).ToString();
+            waveScript = paper.GetComponent<WaveController>();
+            waveScript.WaveData = data;
+        }
+
+        /// <summary> 析构纸片 </summary>
+        internal void DestroyPaper() {
+            Destroy(waveScript.gameObject);
+        }
+
+        /// <summary> 重设纸片位置 </summary>
+        /// <param name="position"> 纸片的新位置 </param>
+        internal void RepositionPaperTo(Vector3 position) {
+            waveScript.transform.localPosition = position;
+        }
+
+        /// <summary> 合并节点的 data </summary>
+        /// <param name="other"> 被合并 data 的节点 </param>
+        internal void MergeDataWith(PaperNode other) {
+            // var start = to.data.Last;
+            foreach (var waveAttribute in other.data)
+                data.AddLast(waveAttribute);
+            // start = start.Next;
+            // var end = to.data.Last;
+        }
+
+        /// <summary> 刷新波形 </summary>
+        internal void RefreshWave() {
+            waveScript.Refresh();
+        }
+        #endregion
     }
 }
