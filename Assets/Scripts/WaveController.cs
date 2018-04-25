@@ -95,12 +95,7 @@ public class WaveController : MonoBehaviour {
 
     /// <summary> 波形函数：众正弦函数叠加 </summary>
     private float WaveFunction(float x) {
-        float y = 0;
-
-        foreach (WaveAttribute wa in waveData)
-            y += wa.a * Mathf.Sin(wa.omega * x + wa.phi);
-
-        return y;
+        return waveData.FunctionValueAt(x);
     }
 
     private void Awake() {
