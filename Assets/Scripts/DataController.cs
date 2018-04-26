@@ -1,16 +1,13 @@
 ﻿using System.IO;
 using UnityEngine;
-using UnityEngine.SceneManagement; // The System.IO namespace contains functions related to loading and saving files
 
-public class DataController : MonoBehaviour {
+internal class DataController {
+    private static DataController instance;
     private LevelData[] allLevelData;
-
     private string gameDataFileName = "data.json";
 
-    void Start() {
-        DontDestroyOnLoad(gameObject);
-
-        LoadGameData();
+    internal static DataController Instance {
+        get { return instance; }
     }
 
     /// <summary>
@@ -24,10 +21,15 @@ public class DataController : MonoBehaviour {
         return allLevelData[0]; // TODO
     }
 
+    private void OnStart() {
+        LoadGameData();
+    }
+
     /// <summary> 从磁盘文件读取并解析数据 </summary>
     private void LoadGameData() {
         // 计算磁盘文件的绝对路径
-        string filePath = Path.Combine(Application.streamingAssetsPath, gameDataFileName);
+        string filePath =
+        Path.Combine(Application.streamingAssetsPath, gameDataFileName);
 
         if (File.Exists(filePath)) {
             // 从磁盘文件读取 含有JSON格式的数据的字符串

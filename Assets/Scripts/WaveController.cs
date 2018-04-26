@@ -8,92 +8,45 @@ using UnityEngine;
 /// </summary>
 /// <remarks> 使用时请设置好 waveData </remarks>
 public class WaveController : MonoBehaviour {
-    /// <summary> 波形展示区的宽度 </summary>
-    private float paperWeight = 2;
-    /// <summary> 波形展示区的高度 </summary>
-    private float paperHeight = 1;
     /// <summary> 初始化时点的横坐标的间隔 </summary>
     private const float deltaX = .02f;
 
-    /// <summary> 波形所在的纸片的 transform </summary>
-    public Transform paperTransform;
     /// <summary> 波形显示对象 Waveform 的 LineRenderer </summary>
     public LineRenderer lineRenderer;
-
+    /// <summary> 波形所在的纸片的 transform </summary>
+    public Transform paperTransform;
     /// <summary> 点坐标数据的缓冲区 </summary>
     private static Vector3[] positions;
-    /// <summary> 当前 WaveController 所采用的波形数据源 </summary>
-    private WaveData waveData;
     /// <summary> 初始化和刷新时点的总数 </summary>
     private int initialPositionCount;
+    /// <summary> 波形展示区的高度 </summary>
+    private float paperHeight = 1;
+    /// <summary> 波形展示区的宽度 </summary>
+    private float paperWeight = 2;
+    /// <summary> 当前 WaveController 所采用的波形数据源 </summary>
+    private WaveData waveData;
 
     /// <summary> 当前 WaveController 所采用的波形数据源 </summary>
     internal WaveData WaveData {
         set { waveData = value; }
     }
 
-    internal float PaperWeight {
-        get { return paperWeight; }
-        set { paperWeight = value; }
-    }
-
+    /// <summary> 波形展示区的高度 </summary>
     internal float PaperHeight {
         get { return paperHeight; }
         set { paperHeight = value; }
     }
 
-    /// <summary> 立即重新初始化 LineRenderer </summary>
-    internal void Refresh() {
-        // 清空原有点数据
-        lineRenderer.positionCount = 0;
-        // 重新计算并更新点
-        CalcAndSetPoints(initialPositionCount);
-    }
-
-    /// <summary> 检查点坐标数据缓冲区 positions 是否已经分配
-    /// 并调整到可以容下 size 的大小 </summary>
-    private static void ExtendBufferSize(int size) {
-        // // 检查点坐标数据缓冲区 positions 是否已经分配
-        // if (positions == null)
-        //     positions = new Vector3[Mathf.NextPowerOfTwo(size)];
-
-        // 注：如果未分配 positions 说明有设计缺陷，而非应该处理的例外，故不特判
-
-        // 如果已分配，检查点坐标数据缓冲区大小是否小于 size ，
-        // 并调整大小到能容纳的下一个 2 的幂
-        if (positions.Length < size)
-            Array.Resize(ref positions, Mathf.NextPowerOfTwo(size));
-    }
-
-    /// <summary> 初始化 LineRenderer </summary>
-    private void InitializeLineRender() {
-        // 初始化点位置数组
-        positions = new Vector3[initialPositionCount];
-        // 重新计算并更新点
-        CalcAndSetPoints(initialPositionCount);
-    }
-
-    /// <summary> 初始化或刷新时计算并设置点的位置 </summary>
-    private void CalcAndSetPoints(int positionCount) {
-        // 计算初始波形上各点的位置， t(x) = t0 - x
-        for (int i = 0; i < positionCount; ++i)
-            positions[i] =
-            new Vector3(i * deltaX, WaveFunction(Time.time - i * deltaX), 0);
-
-        // 更新到 LineRenderer
-        lineRenderer.positionCount = positionCount;
-        lineRenderer.SetPositions(positions);
-    }
-
-    /// <summary> 波形函数：众正弦函数叠加 </summary>
-    private float WaveFunction(float x) {
-        return waveData.FunctionValueAt(x);
+    /// <summary> 波形展示区的宽度 </summary>
+    internal float PaperWeight {
+        get { return paperWeight; }
+        set { paperWeight = value; }
     }
 
     private void Awake() {
         // 计算初始化时点的总数
         initialPositionCount =
-            (int) Math.Ceiling(paperWeight / deltaX);
+            Convert.ToInt32(Math.Ceiling(paperWeight / deltaX));
     }
 
     private void Start() {
@@ -128,7 +81,11 @@ public class WaveController : MonoBehaviour {
         // (如果均未超出范围（尽管不应如此），则保留原本的 positionCount)
         for (int i = 0; i < positionCount; ++i)
             if ((positions[i].x += Time.deltaTime) > paperWeight) {
-                positionCount = i + 1; // 注意：这里下标为 i 的点，是要（保留）的
+                // 将多出的部分“截掉”
+                positions[i].y = positions[i - 1].y + (paperWeight - positions[i - 1].x) *
+                    (positions[i].y - positions[i - 1].y) / (positions[i].x - positions[i - 1].x);
+                positions[i].x = paperWeight;
+                positionCount = i + 1; // 即：下标为i的点，是要（保留）的
                 break;
             }
 
@@ -144,5 +101,47 @@ public class WaveController : MonoBehaviour {
         // 更新 LineRenderer
         lineRenderer.positionCount = positionCount;
         lineRenderer.SetPositions(positions);
+    }
+
+    /// <summary> 立即重新初始化 LineRenderer </summary>
+    internal void Refresh() {
+        // 清空原有点数据
+        lineRenderer.positionCount = 0;
+        // 重新计算并更新点
+        CalcAndSetPoints(initialPositionCount);
+    }
+
+    /// <summary> 初始化 LineRenderer </summary>
+    private void InitializeLineRender() {
+        // 初始化点位置数组
+        positions = new Vector3[initialPositionCount];
+        // 重新计算并更新点
+        CalcAndSetPoints(initialPositionCount);
+    }
+
+    /// <summary> 初始化或刷新时计算并设置点的位置 </summary>
+    private void CalcAndSetPoints(int positionCount) {
+        // 计算初始波形上各点的位置， t(x) = t0 - x
+        for (int i = 0; i < positionCount; ++i)
+            positions[i] =
+            new Vector3(i * deltaX, WaveFunction(Time.time - i * deltaX), 0);
+
+        // 更新到 LineRenderer
+        lineRenderer.positionCount = positionCount;
+        lineRenderer.SetPositions(positions);
+    }
+
+    /// <summary>调整 点坐标数据缓冲区positions 到可以容下 size 的大小 </summary>
+    private static void ExtendBufferSize(int size) {
+        // 注：需要 positions 已分配内存空间
+        // 检查点坐标数据缓冲区大小是否小于 size
+        if (positions.Length < size)
+            // 并调整大小到能容纳的下一个 2 的幂
+            Array.Resize(ref positions, Mathf.NextPowerOfTwo(size));
+    }
+
+    /// <summary> 波形函数：众正弦函数叠加 </summary>
+    private float WaveFunction(float x) {
+        return waveData.ReturnValueAt(x);
     }
 }
