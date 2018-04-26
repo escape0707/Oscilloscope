@@ -8,12 +8,10 @@ using UnityEngine;
 /// </summary>
 /// <remarks> 使用时请设置好 waveData </remarks>
 public class WaveController : MonoBehaviour {
-    // TODO: 这里暂时还是写死的，为了方便之后实例化不同高宽的纸片，应该怎么做？
-    // 回答：要么把宽度和高度当成静态变量用，要么每次生成的时候要求显示传递设置
     /// <summary> 波形展示区的宽度 </summary>
-    private const float paperWeight = 2;
+    private float paperWeight = 2;
     /// <summary> 波形展示区的高度 </summary>
-    private const float paperHeight = 1; // TODO: 如果波形超过了上下界，何如？
+    private float paperHeight = 1;
     /// <summary> 初始化时点的横坐标的间隔 </summary>
     private const float deltaX = .02f;
 
@@ -31,23 +29,17 @@ public class WaveController : MonoBehaviour {
 
     /// <summary> 当前 WaveController 所采用的波形数据源 </summary>
     internal WaveData WaveData {
-        set {
-            waveData = value;
-        }
+        set { waveData = value; }
     }
 
-    /// <summary> 波形展示区的宽度 </summary>
-    public static float PaperWeight {
-        get {
-            return paperWeight;
-        }
+    internal float PaperWeight {
+        get { return paperWeight; }
+        set { paperWeight = value; }
     }
 
-    /// <summary> 波形展示区的高度 </summary>
-    public static float PaperHeight {
-        get {
-            return paperHeight;
-        }
+    internal float PaperHeight {
+        get { return paperHeight; }
+        set { paperHeight = value; }
     }
 
     /// <summary> 立即重新初始化 LineRenderer </summary>
@@ -60,7 +52,7 @@ public class WaveController : MonoBehaviour {
 
     /// <summary> 检查点坐标数据缓冲区 positions 是否已经分配
     /// 并调整到可以容下 size 的大小 </summary>
-    private static void CheckBufferSize(int size) {
+    private static void ExtendBufferSize(int size) {
         // // 检查点坐标数据缓冲区 positions 是否已经分配
         // if (positions == null)
         //     positions = new Vector3[Mathf.NextPowerOfTwo(size)];
@@ -128,7 +120,7 @@ public class WaveController : MonoBehaviour {
         // TODO：这里是不是有更好的办法？
         //       比如把 positions 的结构换成 LinkedList 然后映射 + 反映射？
         int positionCount = lineRenderer.positionCount;
-        CheckBufferSize(positionCount + 1);
+        ExtendBufferSize(positionCount + 1);
         lineRenderer.GetPositions(positions);
 
         // 将之前 Line 中点的坐标更新，并且检测新坐标是否超出范围
