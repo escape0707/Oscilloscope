@@ -20,6 +20,25 @@ internal class WaveModification : WaveAttribute {
     internal WaveModification(WaveModification other):
         this(other.A, other.Omega, other.Phi) { }
 
+    /// <summary> 求差运算符 </summary>
+    public static WaveModification operator -(
+        WaveModification wm1,
+        WaveModification wm2
+    ) {
+        return new WaveModification(
+            wm1.A - wm2.A,
+            wm1.Omega - wm2.Omega,
+            wm1.Phi - wm2.Phi);
+    }
+
+    /// <summary> 求占比运算符 </summary> // TODO
+    public static float operator /(
+        WaveModification wm1,
+        WaveModification wm2
+    ) {
+        return (wm1.A / wm2.A + wm1.Omega / wm2.Omega + wm1.Phi / wm2.Phi) / 3;
+    }
+
     /// <summary>
     /// 叠加另一个 WaveModification 效果
     /// </summary>

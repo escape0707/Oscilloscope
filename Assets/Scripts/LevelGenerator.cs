@@ -12,10 +12,10 @@ internal class LevelGenerator : MonoBehaviour {
         papersParentTransform = new GameObject("Papers").transform;
     }
 
-    /// <summary> 初始化第一关 </summary>
-    private void InitializeLevelOne() {
+    /// <summary> 初始化用户修改纸片的关卡 </summary>
+    private void InitializeModifyLevel() {
         // 关卡数据
-        LevelData levelData = DataController.Instance.GetCurrentLevelData(); // TODO
+        LevelData levelData = DataController.Instance.GetCurrentLevelData();
         // 纸片们数据
         PaperData[] papersData = levelData.papersData;
         // 用户可操作纸片的数据们
@@ -31,7 +31,7 @@ internal class LevelGenerator : MonoBehaviour {
                 waveControllers[i++] = GetPaper(paperData);
         }
 
-        // 配置两张用户可操作纸片的 WaveData
+        // 配置两张基础纸片的 WaveData
         for (int i = 0; i < 2; ++i)
             waveControllers[i].WaveData = waveDatas[i] =
             new WaveData(papersData[i].waveAttributes);
@@ -49,9 +49,17 @@ internal class LevelGenerator : MonoBehaviour {
         //            则至少对和纸片的拷贝级别应该达到 拷贝每个WaveModification
         WaveData goal = new WaveData(sum);
         // 对目标纸片的第一个蒙版做目标修改
-        // 注：本质上只需要定义一个修改，故直接定义为对第一个纸片做了修改
+        // 注：因为用户只操作一个纸片，故只需要对一个 Mask 做修改，约定为第一个
         goal.ModifyByMask(0, levelData.modification);
         waveControllers[3].WaveData = goal;
+    }
+
+    private void CheckUserAnswer() {
+        WaveModification ans =
+            DataController.Instance.GetCurrentLevelData().modification;
+        WaveModification usr = new WaveModification(); // TODO
+        if ((usr - ans) / ans < /* theNumber */ 1)
+            /* SendMessage("Win this level.") */;
     }
 
     /// <summary>
@@ -61,6 +69,7 @@ internal class LevelGenerator : MonoBehaviour {
     /// <returns> 返回新纸片对应的 WaveController脚本 </returns>
     /// <remarks> 纸片的 waveData 请之后单独设置 </remarks>
     private WaveController GetPaper(PaperData paperData) {
+        // 实例化纸片，保存 WaveController
         WaveController waveController =
             Instantiate(
                 PaperPrefab,
@@ -69,8 +78,20 @@ internal class LevelGenerator : MonoBehaviour {
                 papersParentTransform).
         GetComponent<WaveController>();
 
+        // 设置纸片宽和高
         waveController.PaperWeight = paperData.paperWeight;
         waveController.PaperHeight = paperData.paperHeight;
+
+        // 返回生成纸片的 WaveController脚本
         return waveController;
     }
 }
+
+/**
+
+1、Unity EventSystem
+3、处理输入并修改纸片
+4、傅里叶变换部分
+5、JSON编辑器
+
+ */

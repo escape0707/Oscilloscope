@@ -82,8 +82,11 @@ public class WaveController : MonoBehaviour {
         for (int i = 0; i < positionCount; ++i)
             if ((positions[i].x += Time.deltaTime) > paperWeight) {
                 // 将多出的部分“截掉”
-                positions[i].y = positions[i - 1].y + (paperWeight - positions[i - 1].x) *
-                    (positions[i].y - positions[i - 1].y) / (positions[i].x - positions[i - 1].x);
+                positions[i].y =
+                    positions[i - 1].y +
+                    (paperWeight - positions[i - 1].x) *
+                    (positions[i].y - positions[i - 1].y) /
+                    (positions[i].x - positions[i - 1].x);
                 positions[i].x = paperWeight;
                 positionCount = i + 1; // 即：下标为i的点，是要（保留）的
                 break;
