@@ -92,6 +92,5 @@ internal class LevelGenerator : MonoBehaviour {
 1、Unity EventSystem
 3、处理输入并修改纸片
 4、傅里叶变换部分
-5、JSON编辑器
 
  */

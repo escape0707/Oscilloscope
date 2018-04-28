@@ -1,6 +1,7 @@
 ﻿/// <summary> 代表一条正弦波的参数组，由 三个float：a， omega， phi 组成 </summary>
-internal class WaveAttribute {
-    internal float A, Omega, Phi;
+[System.Serializable]
+public class WaveAttribute {
+    public float A, Omega, Phi;
 
     /// <summary> 初始化构造函数 </summary>
     internal WaveAttribute(float a = 1, float omega = 1, float phi = 0) {
@@ -11,7 +12,8 @@ internal class WaveAttribute {
 }
 
 /// <summary> 代表波的一次修改的参数组，由 三个float：a， omega， phi 组成 </summary>
-internal class WaveModification : WaveAttribute {
+[System.Serializable]
+public class WaveModification : WaveAttribute {
     /// <summary> 初始化构造函数 </summary>
     internal WaveModification(float a = 1, float omega = 1, float phi = 0):
         base(a, omega, phi) { }
